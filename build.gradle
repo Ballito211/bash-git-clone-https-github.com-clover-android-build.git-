@@ -1,0 +1,124 @@
+/**
+ * Copyright (C) 2016 Clover Network, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import org.jetbrains.dokka.gradle.DokkaTaskPartial
+import org.gradle.api.internal.project.DefaultProject
+buildscript {
+  if (!project.hasProperty('androidBuild')) {
+    def likelyAndroidBuild = file('../android-build')
+    if (likelyAndroidBuild.exists()) {
+      ext.androidBuild = likelyAndroidBuild.absolutePath
+    } else {
+      throw new GradleException("Couldn't find android-build at " + likelyAndroidBuild.absolutePath)
+    }
+  }
+  apply from: "${project.rootDir}/common-project.gradle"
+  apply from: "${project.rootDir}/deps.gradle"
+  repositories {
+    mavenLocal()
+  mavenCentral()
+  google()
+  }
+
+  dependencies {
+    classpath androidPlugin
+    classpath kotlinPlugin
+    classpath sonarqubePlugin
+    classpath detektPlugin
+  }
+}
+plugins {
+  id("org.jetbrains.dokka") version "1.9.20"
+}
+repositories {
+  mavenLocal()
+  mavenCentral()
+  google()
+}
+
+defaultTasks 'clean', 'install'
+
+// SonarQube static analysis configuration
+
+//  Adding detekt tasks to all the sub-modules
+subprojects {
+
+  tasks.withType(DokkaTaskPartial.class).configureEach {
+    dependsOn compileReleaseAidl
+    moduleName.set(project.name)
+    moduleVersion.set(project.version.toString())
+
+    String config = """
+    {
+      "customAssets": ["${file("assets/logo-icon.svg")}"],
+      "customStyleSheets": ["${file("assets/clover.css")}"]
+    }
+    """
+    pluginsMapConfiguration.set([
+            "org.jetbrains.dokka.base.DokkaBase": config
+    ])
+    dokkaSourceSets {
+      named("main") {
+        // https://slack-chats.kotlinlang.org/t/484637/hi-all-i-m-trying-to-get-dokka-to-include-documentation-for-#3fae1eb4-6f24-4765-8803-687e6c5819be
+        sourceRoots.from(file("build/generated/aidl_source_output_dir/release/out"))
+        suppressGeneratedFiles.set(false)
+        sourceLink {
+          // FIXME: source linking just doesn't seem to work
+          //  possibly related to https://github.com/Kotlin/dokka/issues/2876
+          localDirectory.set(rootDir)
+          remoteUrl.set(new URL("https://github.com/clover/clover-android-sdk/tree/master"))
+          remoteLineSuffix.set("#L")
+        }
+        externalDocumentationLink {
+          url.set(new URL("https://square.github.io/retrofit/2.x/retrofit/"))
+        }
+        externalDocumentationLink {
+          url.set(new URL("https://square.github.io/okhttp/3.x/okhttp/"))
+        }
+        if(project.name == "clover-android-sdk") includes.from("overview.md")
+
+        perPackageOption {
+          matchingRegex.set("com.clover.sdk.internal.*")
+          suppress.set(true)
+        }
+      }
+    }
+
+    dependencies {
+      dokkaPlugin('org.jetbrains.dokka:kotlin-as-java-plugin:1.9.20')
+      dokkaPlugin('org.jetbrains.dokka:android-documentation-plugin:1.9.20')
+      dokkaPlugin('com.clover:clover-dokka-plugin:1.0-SNAPSHOT')
+    }
+  }
+}
+tasks.dokkaHtmlMultiModule {
+  moduleName.set("Clover Android SDK")
+  moduleVersion.set("r" + (project(":clover-android-sdk") as DefaultProject).evaluate().version)
+
+  String config = """
+  {
+    "customAssets": ["${file("assets/logo-icon.svg")}"],
+    "customStyleSheets": ["${file("assets/clover.css")}"]
+  }
+  """
+  pluginsMapConfiguration.set([
+          "org.jetbrains.dokka.base.DokkaBase": config
+  ])
+}
+dependencies {
+  dokkaPlugin('org.jetbrains.dokka:kotlin-as-java-plugin:1.9.20')
+  dokkaPlugin('org.jetbrains.dokka:android-documentation-plugin:1.9.20')
+  dokkaPlugin('com.clover:clover-dokka-plugin:1.0-SNAPSHOT')
+}

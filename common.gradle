@@ -1,0 +1,43 @@
+apply from: file("${project.rootDir}/versions.gradle")
+apply plugin: 'maven-publish'
+
+repositories {
+  mavenLocal()
+  mavenCentral()
+  google()
+}
+
+dependencies {
+  testImplementation "junit:junit:$JUNIT_VERSION"
+  testImplementation "org.mockito:mockito-core:$MOCKITO_VERSION"
+  testImplementation "org.robolectric:robolectric:$ROBOLECTRIC_VERSION"
+}
+
+configurations.implementation.resolutionStrategy {
+  force "com.google.guava:guava:$GUAVA_VERSION"
+  force "org.hamcrest:hamcrest-core:$HAMCREST_VERSION"
+}
+
+android {
+  testOptions {
+    unitTests {
+      includeAndroidResources = true
+    }
+  }
+
+  compileOptions {
+    sourceCompatibility JavaVersion.VERSION_17
+    targetCompatibility JavaVersion.VERSION_17
+  }
+}
+
+// Disable all releaseUnitTests, newer android testing libs are not compilable for ReleaseUnitTest
+tasks.configureEach {task ->
+  if (task.name.contains("ReleaseSignedUnitTest")) {
+    task.enabled = false
+  }
+  if (task.name.contains("ReleaseUnitTest")) {
+    task.enabled = false
+  }
+}
+

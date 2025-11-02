@@ -1,0 +1,41 @@
+apply plugin: 'com.android.library'
+apply from: file("${project.rootDir}/common.gradle")
+apply from: file("${project.rootDir}/list-dependencies.gradle")
+
+android {
+  compileSdkVersion COMPILE_SDK_VERSION
+
+  defaultConfig {
+    minSdkVersion MIN_SDK_VERSION
+    targetSdkVersion TARGET_SDK_VERSION
+  }
+
+  useLibrary HTTP_LIBRARY
+
+  packagingOptions {
+    exclude 'META-INF/LICENSE'
+    exclude 'META-INF/NOTICE'
+    pickFirst 'META-INF/ASL2.0'
+  }
+
+  // tell Android studio that the instrumentTest source set is located in the unit test source set
+  sourceSets {
+    main {
+      manifest.srcFile 'src/main/AndroidManifest.xml'
+    }
+  }
+  publishing {
+    singleVariant('release')
+    singleVariant('debug')
+    singleVariant('assembleRelease')
+  }
+}
+
+task listLibraries {
+    println project.group + ':' + project.name
+}
+
+// Task to generate JAR for the Android platform
+task makeJar(type: Jar, dependsOn: 'assembleRelease') {
+    from fileTree(dir: 'build/intermediates/javac/release/classes')
+}
