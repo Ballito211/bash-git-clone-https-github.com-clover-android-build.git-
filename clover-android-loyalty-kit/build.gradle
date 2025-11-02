@@ -1,0 +1,63 @@
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
+/**
+ * Copyright (C) 2016 Clover Network, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+group = 'com.clover.sdk'
+version = '329'
+
+
+apply from: file("${project.rootDir}/lib.gradle")
+apply plugin: 'kotlin-android'
+apply plugin: 'org.jetbrains.dokka'
+
+android {
+
+  buildTypes.configureEach {
+    consumerProguardFiles 'proguard-rules.pro'
+  }
+
+  buildFeatures {
+    aidl true
+  }
+
+  namespace "com.clover.android.loyalty"
+
+  compileOptions {
+    sourceCompatibility = 8
+    targetCompatibility = 8
+  }
+  tasks.withType(KotlinCompile).configureEach {
+    kotlinOptions {
+      jvmTarget = '1.8'
+    }
+  }
+}
+
+dependencies {
+  implementation project(':clover-android-sdk')
+  implementation "androidx.annotation:annotation:$ANDROIDX_ANNOTATION_VERSION"
+  implementation ("com.google.code.gson:gson") {
+    version {
+      strictly "$GSON_VERSION"
+    }
+  }
+}
+
+ext{
+  project_name = 'Clover Android Loyalty Kit'
+  project_description = 'Android services and objects used for interacting with Clover Loyalty Kit'
+
+}
